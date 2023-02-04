@@ -59,7 +59,7 @@ circos.yaxis(at=c(0, 50, 100), labels.cex=0.25, lwd=0, tick.length=0, labels.col
 
 
 
-# # coverage的散点图
+# # coverage plot
 circos.genomicTrack(cov_marker, 
                     panel.fun = function(region, value, ...) {
                       circos.genomicPoints(region, value, pch = 16, cex = 0.4, col = "#AD8B73", ...)}, track.height=0.08, bg.border=F)
