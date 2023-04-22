@@ -20,7 +20,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC, OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.model_selection import cross_val_score, cross_validate, StratifiedKFold, StratifiedShuffleSplit
-from sklearn.metrics import roc_curve, accuracy_score, auc, recall_score, precision_score, average_precision_score, roc_auc_score, f1_score
+from sklearn.metrics import roc_curve,precision_recall_curve ,matthews_corrcoef,accuracy_score, auc, recall_score, precision_score, average_precision_score, roc_auc_score, f1_score
+
 from sklearn.metrics import balanced_accuracy_score
 
 #model construction
@@ -55,12 +56,18 @@ class machine_learning:
         FN = ((pred==0) & (y==1)).sum()
         sen = TP/ float(TP + FN)
         spe = TN / float(FP + TN)
+
+        accuracy = accuracy_score(y, pred)
+        mcc = matthews_corrcoef(y, pred)
+        mcc=(mcc+1)/2 # normalization of MCC
+        
+        precision, recall, thresholds = precision_recall_curve(y, proba)
+        auc_pr = sklearn.metrics.auc(recall,precision) #AUC-PR
+        auc_score = roc_auc_score(y, proba)
+        f1 = f1_score(y, pred)
         recall = recall_score(y, pred)
         precision = precision_score(y, pred)
-        accuracy = accuracy_score(y, pred)
-        auc = roc_auc_score(y, proba)
-        f1 = f1_score(y, pred)
-        return [pred, proba, sen, spe, recall, precision,accuracy, f1, auc]
+        return [pred, proba, sen, spe, recall, precision,accuracy, f1, auc_score,mcc,auc_pr]
             
 
    
@@ -70,7 +77,7 @@ class machine_learning:
         
         k, tprs, aucs, mean_fpr, plot_lines = 0, [], [], np.linspace(0, 1, 100), []
         sens, spes = [],[]
-        scores = np.zeros([k_fold, 7])
+        scores = np.zeros([k_fold, 9])
 
   
         for train_index, test_index in spt:
@@ -93,12 +100,12 @@ class machine_learning:
 
 
 
-            pred, proba, sen, spe, recall, precision,accuracy, f1, auc_score = self.scoring(clf, X_test, Y_test)
+            pred, proba, sen, spe, recall, precision,accuracy, f1, auc_score,mcc,auc_pr = self.scoring(clf, X_test, Y_test)
 
             aucs.append(auc_score)
             sens.append(sen)
             spes.append(spe)
-            scores[k] = [accuracy, precision, recall, f1,sen,spe, auc_score]
+            scores[k] = [accuracy, precision, recall, f1,sen,spe, auc_score,mcc,auc_pr]
             
             fpr, tpr, thresholds = roc_curve(Y_test, proba) # fpr,tpr 
             tprs.append(np.interp(mean_fpr, fpr, tpr))
@@ -109,7 +116,7 @@ class machine_learning:
             k += 1
 
 
-        scores = pd.DataFrame(scores, index=['Fold'+str(i+1) for i in range(k_fold)], columns=['accuracy', 'precision', 'recall', 'f1','sensitivity','specificity', 'auc'])
+        scores = pd.DataFrame(scores, index=['Fold'+str(i+1) for i in range(k_fold)], columns=['accuracy', 'precision', 'recall', 'f1','sensitivity','specificity', 'auc','mcc','auc_pr'])
 
         mean_tpr = np.mean(tprs, axis=0)
         mean_tpr[-1] = 1.0
